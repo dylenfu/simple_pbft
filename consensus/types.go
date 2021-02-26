@@ -23,14 +23,15 @@ type PrePrepareMsg struct {
 }
 
 type VoteMsg struct {
-	ViewID     int64  `json:"viewID"`
-	SequenceID int64  `json:"sequenceID"`
-	Digest     string `json:"digest"`
-	NodeID     string `json:"nodeID"`
-	MsgType           `json:"msgType"`
+	ViewID     int64   `json:"viewID"`
+	SequenceID int64   `json:"sequenceID"`
+	Digest     string  `json:"digest"`
+	NodeID     string  `json:"nodeID"`
+	MType      MsgType `json:"msgType"`
 }
 
 type MsgType int
+
 const (
 	PrepareMsg MsgType = iota
 	CommitMsg

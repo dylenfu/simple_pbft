@@ -75,7 +75,7 @@ func NewNode(nodeID string) *Node {
 	go node.alarmToDispatcher()
 
 	// Start message resolver
-	go node.resolveMsg()
+	go node.handleMsg()
 
 	return node
 }
@@ -307,7 +307,7 @@ func (node *Node) routeMsg(msg interface{}) []error {
 			node.MsgBuffer.PrePrepareMsgs = append(node.MsgBuffer.PrePrepareMsgs, msg.(*consensus.PrePrepareMsg))
 		}
 	case *consensus.VoteMsg:
-		if msg.(*consensus.VoteMsg).MsgType == consensus.PrepareMsg {
+		if msg.(*consensus.VoteMsg).MType == consensus.PrepareMsg {
 			if node.CurrentState == nil || node.CurrentState.CurrentStage != consensus.PrePrepared {
 				node.MsgBuffer.PrepareMsgs = append(node.MsgBuffer.PrepareMsgs, msg.(*consensus.VoteMsg))
 			} else {
@@ -324,7 +324,7 @@ func (node *Node) routeMsg(msg interface{}) []error {
 				// Send messages.
 				node.MsgDelivery <- msgs
 			}
-		} else if msg.(*consensus.VoteMsg).MsgType == consensus.CommitMsg {
+		} else if msg.(*consensus.VoteMsg).MType == consensus.CommitMsg {
 			if node.CurrentState == nil || node.CurrentState.CurrentStage != consensus.Prepared {
 				node.MsgBuffer.CommitMsgs = append(node.MsgBuffer.CommitMsgs, msg.(*consensus.VoteMsg))
 			} else {
@@ -388,43 +388,45 @@ func (node *Node) routeMsgWhenAlarmed() []error {
 	return nil
 }
 
-func (node *Node) resolveMsg() {
+func (node *Node) handleMsg() {
 	for {
 		// Get buffered messages from the dispatcher.
 		msgs := <-node.MsgDelivery
 		switch msgs.(type) {
 		case []*consensus.RequestMsg:
-			errs := node.resolveRequestMsg(msgs.([]*consensus.RequestMsg))
+			errs := node.handleRequest(msgs.([]*consensus.RequestMsg))
 			if len(errs) != 0 {
 				for _, err := range errs {
 					fmt.Println(err)
 				}
 				// TODO: send err to ErrorChannel
 			}
+
 		case []*consensus.PrePrepareMsg:
-			errs := node.resolvePrePrepareMsg(msgs.([]*consensus.PrePrepareMsg))
+			errs := node.handlePrePrepare(msgs.([]*consensus.PrePrepareMsg))
 			if len(errs) != 0 {
 				for _, err := range errs {
 					fmt.Println(err)
 				}
 				// TODO: send err to ErrorChannel
 			}
+
 		case []*consensus.VoteMsg:
 			voteMsgs := msgs.([]*consensus.VoteMsg)
 			if len(voteMsgs) == 0 {
 				break
 			}
 
-			if voteMsgs[0].MsgType == consensus.PrepareMsg {
-				errs := node.resolvePrepareMsg(voteMsgs)
+			if voteMsgs[0].MType == consensus.PrepareMsg {
+				errs := node.handlePrepare(voteMsgs)
 				if len(errs) != 0 {
 					for _, err := range errs {
 						fmt.Println(err)
 					}
 					// TODO: send err to ErrorChannel
 				}
-			} else if voteMsgs[0].MsgType == consensus.CommitMsg {
-				errs := node.resolveCommitMsg(voteMsgs)
+			} else if voteMsgs[0].MType == consensus.CommitMsg {
+				errs := node.handleCommit(voteMsgs)
 				if len(errs) != 0 {
 					for _, err := range errs {
 						fmt.Println(err)
@@ -443,7 +445,7 @@ func (node *Node) alarmToDispatcher() {
 	}
 }
 
-func (node *Node) resolveRequestMsg(msgs []*consensus.RequestMsg) []error {
+func (node *Node) handleRequest(msgs []*consensus.RequestMsg) []error {
 	errs := make([]error, 0)
 
 	// Resolve messages
@@ -461,7 +463,7 @@ func (node *Node) resolveRequestMsg(msgs []*consensus.RequestMsg) []error {
 	return nil
 }
 
-func (node *Node) resolvePrePrepareMsg(msgs []*consensus.PrePrepareMsg) []error {
+func (node *Node) handlePrePrepare(msgs []*consensus.PrePrepareMsg) []error {
 	errs := make([]error, 0)
 
 	// Resolve messages
@@ -479,7 +481,7 @@ func (node *Node) resolvePrePrepareMsg(msgs []*consensus.PrePrepareMsg) []error 
 	return nil
 }
 
-func (node *Node) resolvePrepareMsg(msgs []*consensus.VoteMsg) []error {
+func (node *Node) handlePrepare(msgs []*consensus.VoteMsg) []error {
 	errs := make([]error, 0)
 
 	// Resolve messages
@@ -497,7 +499,7 @@ func (node *Node) resolvePrepareMsg(msgs []*consensus.VoteMsg) []error {
 	return nil
 }
 
-func (node *Node) resolveCommitMsg(msgs []*consensus.VoteMsg) []error {
+func (node *Node) handleCommit(msgs []*consensus.VoteMsg) []error {
 	errs := make([]error, 0)
 
 	// Resolve messages

@@ -20,9 +20,9 @@ func LogMsg(msg interface{}) {
 
 	case *consensus.VoteMsg:
 		voteMsg := msg.(*consensus.VoteMsg)
-		if voteMsg.MsgType == consensus.PrepareMsg {
+		if voteMsg.MType == consensus.PrepareMsg {
 			fmt.Printf("[PREPARE] NodeID: %s\n", voteMsg.NodeID)
-		} else if voteMsg.MsgType == consensus.CommitMsg {
+		} else if voteMsg.MType == consensus.CommitMsg {
 			fmt.Printf("[COMMIT] NodeID: %s\n", voteMsg.NodeID)
 		}
 	}
