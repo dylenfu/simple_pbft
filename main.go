@@ -1,8 +1,9 @@
-package main
+package simple_pbft
 
 import (
 	"os"
-	"github.com/bigpicturelabs/consensusPBFT/pbft/network"
+
+	"github.com/dylenfu/pbft/network"
 )
 
 func main() {
